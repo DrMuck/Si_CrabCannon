@@ -1,0 +1,8 @@
+bin/
+obj/
+include/
+*.png
+*.json
+!Si_CrabCannon/*.csproj
+*.py
+archive/
