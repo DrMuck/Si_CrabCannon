@@ -19,28 +19,8 @@ namespace Si_CrabCannon
 
         void UpdateSuperWeapon()
         {
-            Team alienTeam = null;
-            for (int i = 0; i < Player.Players.Count; i++)
-            {
-                var p = Player.Players[i];
-                if (p != null && p.Team != null && p.Team.TeamName != null &&
-                    p.Team.TeamName.Contains("Alien"))
-                {
-                    alienTeam = p.Team;
-                    break;
-                }
-            }
+            Team alienTeam = FindAlienTeam();
             if (alienTeam == null) return;
-
-            // Check normal cannon tier requirement
-            if (MinTier > 0 && !_cannonTierAnnounced && alienTeam.TechnologyTier >= MinTier)
-            {
-                _cannonTierAnnounced = true;
-                float[] cs = ComputeBallisticStats(LaunchSpeed, LaunchAngle);
-                SendTeamChat(alienTeam,
-                    string.Format("[CANNON] Crab Cannon unlocked! Walk a crab to the Nest to launch. Use /ccaim <angle> <speed> to aim (peak={0:F0}m range={1:F0}m).",
-                        cs[0], cs[1]));
-            }
 
             if (alienTeam.TechnologyTier >= SuperTier)
             {
@@ -95,14 +75,18 @@ namespace Si_CrabCannon
                 aimSpeed = playerAim[1];
             }
 
+            MelonLogger.Msg(string.Format("SUPER LAUNCH: player={0} aimSpeed={1} aimAngle={2} (team: {3}/{4}, playerOverride: {5})",
+                player.PlayerName, aimSpeed, aimAngle, _superSpeed, _superAngle,
+                _playerAim.ContainsKey(pid) ? "YES" : "no"));
+
             LaunchUnit(player, unit, nest, aimSpeed, aimAngle);
 
             _superCharges--;
             float[] bstats = ComputeBallisticStats(aimSpeed, aimAngle);
 
             SendTeamChat(player.Team,
-                string.Format("[SUPER WEAPON] {0} launched Goliath! {1}/{2} remaining | peak={3:F0}m range={4:F0}m",
-                    player.PlayerName, _superCharges, SuperMaxCharges, bstats[0], bstats[1]));
+                string.Format("[SUPER WEAPON] {0} launched Goliath! {1}/{2} remaining | spd={3} ang={4} peak={5:F0}m range={6:F0}m",
+                    player.PlayerName, _superCharges, SuperMaxCharges, aimSpeed, aimAngle, bstats[0], bstats[1]));
 
             if (_superCharges <= 0)
             {

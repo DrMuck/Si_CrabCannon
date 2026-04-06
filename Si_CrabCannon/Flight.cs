@@ -31,6 +31,9 @@ namespace Si_CrabCannon
             public Vector3 PendingVelocity;
             public bool Launched;
             public float OrigTeleportDist;
+            public bool OrigKinematic;
+            public Vector3 LaunchPos;
+            public List<MonoBehaviour> DisabledScripts; // all scripts disabled during flight
         }
 
         // --- Runtime state ---
@@ -222,12 +225,20 @@ namespace Si_CrabCannon
             int origLayer = unit.gameObject.layer;
             unit.gameObject.layer = GamePhysics.LAYER_NOCOLLIDE;
 
-            MonoBehaviour creatureScript = null;
-            var decapod = unit.GetComponent<CreatureDecapod>();
-            if (decapod != null)
+            // Disable ALL MonoBehaviours on the unit during flight
+            // This stops Sensor (expensive LOS raycasts from altitude),
+            // CreatureDecapod (zeros velocity), AIAgent, Animator, etc.
+            // Only keep NetworkComponent and NetworkTransformComponent alive
+            var disabledScripts = new List<MonoBehaviour>();
+            var allScripts = unit.GetComponentsInChildren<MonoBehaviour>();
+            foreach (var script in allScripts)
             {
-                creatureScript = decapod;
-                decapod.enabled = false;
+                if (script == null || !script.enabled) continue;
+                // Keep network components alive
+                if (script is NetworkComponent) continue;
+                if (script is NetworkTransformComponent) continue;
+                script.enabled = false;
+                disabledScripts.Add(script);
             }
 
             var allColliders = unit.GetComponentsInChildren<Collider>();
@@ -253,7 +264,8 @@ namespace Si_CrabCannon
                 PastApex = false,
                 OrigLayer = origLayer,
                 DragOrig = dragOrig,
-                CreatureScript = creatureScript,
+                CreatureScript = null, // now using DisabledScripts list
+                DisabledScripts = disabledScripts,
                 DisabledColliders = disabledColliders.ToArray(),
                 PendingVelocity = launchVel,
                 Launched = false,
@@ -265,7 +277,7 @@ namespace Si_CrabCannon
 
             unit.transform.rotation = Quaternion.LookRotation(forward + Vector3.up * 0.3f);
 
-            PlayCannonSound();
+            PlayCannonSound(player);
 
             string unitName = unit.ObjectInfo != null ? unit.ObjectInfo.name : "?";
             float[] bstats = ComputeBallisticStats(speed, angle);
@@ -291,27 +303,25 @@ namespace Si_CrabCannon
 
                 float elapsed = Time.time - flight.LaunchTime;
 
-                // Apply velocity after delay (ownership transition)
+                // Phase 2: single AddForce impulse after ownership delay
                 if (!flight.Launched && elapsed >= 0.3f)
                 {
                     flight.Launched = true;
                     flight.StartY = flight.Unit.transform.position.y;
                     var rbLaunch = flight.Unit.GetComponent<Rigidbody>();
                     if (rbLaunch != null)
-                        rbLaunch.linearVelocity = flight.PendingVelocity;
+                        rbLaunch.AddForce(flight.PendingVelocity, ForceMode.VelocityChange);
                 }
 
                 if (!flight.Launched) continue;
 
-                float currentY = flight.Unit.transform.position.y;
-                var rb = flight.Unit.GetComponent<Rigidbody>();
-                float vy = rb != null ? rb.linearVelocity.y : 0f;
+                // Hands off — let physics fly. Only timer-based checks.
+                float estimatedFlightTime = (2f * flight.PendingVelocity.y) / G_EFF;
+                float estimatedCollidersTime = estimatedFlightTime * 0.8f;
+                float flightElapsed = elapsed - 0.3f;
 
-                if (!flight.PastApex && vy < 0f && elapsed > 0.8f)
-                    flight.PastApex = true;
-
-                // Re-enable colliders when descending near ground
-                if (flight.PastApex && !flight.CollidersRestored && currentY <= flight.StartY + 50f)
+                // Re-enable colliders near estimated landing
+                if (!flight.CollidersRestored && flightElapsed > estimatedCollidersTime)
                 {
                     flight.CollidersRestored = true;
                     flight.Unit.gameObject.layer = flight.OrigLayer;
@@ -320,10 +330,8 @@ namespace Si_CrabCannon
                             if (col != null) col.enabled = true;
                 }
 
-                // Landing detection
-                bool belowStart = currentY <= flight.StartY + 5f;
-                bool hitGround = flight.PastApex && vy >= -1f && vy <= 1f && elapsed > 1.5f;
-                bool landed = flight.PastApex && (belowStart || hitGround) && elapsed > 1f;
+                // Land based on timer or timeout
+                bool landed = flightElapsed > estimatedFlightTime + 1f;
                 bool timeout = elapsed > flight.MaxFlightTime;
 
                 if (landed || timeout)
@@ -335,25 +343,6 @@ namespace Si_CrabCannon
                     MelonLogger.Msg(string.Format("Cannon {0}! Player: {1} ({2:F1}s)",
                         timeout ? "timeout" : "landed", flight.Player?.PlayerName ?? "?", elapsed));
                 }
-                else
-                {
-                    if (rb != null)
-                    {
-                        // Gravity compensation for network sync
-                        Vector3 realVel = rb.linearVelocity;
-                        rb.linearVelocity = realVel - Physics.gravity * Time.fixedDeltaTime;
-
-                        if (flight.Unit.NetworkTransformComponent != null)
-                            flight.Unit.NetworkTransformComponent.OnTeleport();
-
-                        rb.linearVelocity = realVel;
-
-                        Vector3 faceDir = realVel;
-                        faceDir.y *= 0.3f;
-                        if (faceDir.sqrMagnitude > 1f)
-                            flight.Unit.transform.rotation = Quaternion.LookRotation(faceDir);
-                    }
-                }
             }
 
             foreach (int id in finished)
@@ -364,8 +353,15 @@ namespace Si_CrabCannon
         {
             if (flight.Unit == null || flight.Unit.IsDestroyed) return;
 
-            if (flight.CreatureScript != null)
-                flight.CreatureScript.enabled = true;
+            // Re-enable all scripts
+            if (flight.DisabledScripts != null)
+            {
+                foreach (var script in flight.DisabledScripts)
+                {
+                    if (script != null) script.enabled = true;
+                }
+                flight.DisabledScripts = null;
+            }
 
             if (!flight.CollidersRestored)
             {

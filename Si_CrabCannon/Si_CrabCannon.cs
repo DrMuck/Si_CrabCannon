@@ -84,6 +84,8 @@ namespace Si_CrabCannon
 
             MonitorFlights();
 
+            CheckCannonTierAnnouncement();
+
             if (SuperEnabled)
                 UpdateSuperWeapon();
         }

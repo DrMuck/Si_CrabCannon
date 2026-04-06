@@ -52,9 +52,9 @@ namespace Si_CrabCannon
             MelonLogger.Msg("CrabCannon [TeamChat]: " + msg);
         }
 
-        void PlayCannonSound()
+        void PlayCannonSound(Player player)
         {
-            try { _ = AudioHelper.PlaySoundFile(CannonSoundFile); }
+            try { _ = AudioHelper.PlaySoundFile(CannonSoundFile, player); }
             catch (Exception ex) { MelonLogger.Warning("CrabCannon sound failed: " + ex.Message); }
         }
 
@@ -74,6 +74,35 @@ namespace Si_CrabCannon
         {
             if (structure == null || structure.ObjectInfo == null) return false;
             return structure.ObjectInfo.name.Contains("Nest");
+        }
+
+        static Team FindAlienTeam()
+        {
+            for (int i = 0; i < Player.Players.Count; i++)
+            {
+                var p = Player.Players[i];
+                if (p != null && p.Team != null && p.Team.TeamName != null &&
+                    p.Team.TeamName.Contains("Alien"))
+                    return p.Team;
+            }
+            return null;
+        }
+
+        void CheckCannonTierAnnouncement()
+        {
+            if (_cannonTierAnnounced || MinTier <= 0) return;
+
+            Team alienTeam = FindAlienTeam();
+            if (alienTeam == null) return;
+
+            if (alienTeam.TechnologyTier >= MinTier)
+            {
+                _cannonTierAnnounced = true;
+                float[] cs = ComputeBallisticStats(LaunchSpeed, LaunchAngle);
+                SendTeamChat(alienTeam,
+                    string.Format("[CANNON] Crab Cannon unlocked! Walk a crab to the Nest to launch. Use /ccaim <angle> <speed> to aim (peak={0:F0}m range={1:F0}m).",
+                        cs[0], cs[1]));
+            }
         }
 
         bool IsNearNest(Unit unit, List<Structure> structures)
