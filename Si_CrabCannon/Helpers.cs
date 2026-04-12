@@ -17,6 +17,25 @@ namespace Si_CrabCannon
         // --- Per-player aim overrides ---
         static readonly Dictionary<int, float[]> _playerAim = new Dictionary<int, float[]>();
 
+        /// <summary>
+        /// Inverse of ComputeBallisticStats: given angle + desired range, compute the required speed.
+        /// Returns -1f if the angle cannot achieve any positive range.
+        /// range = spd² · [sin(2a)/g − 2·DRAG_H·sin²(a)/g²]
+        /// </summary>
+        static float ComputeSpeedForRange(float angleDeg, float rangeMeters, out float achievedRange)
+        {
+            achievedRange = 0f;
+            float rad = angleDeg * Mathf.Deg2Rad;
+            float sin2a = Mathf.Sin(2f * rad);
+            float sinA = Mathf.Sin(rad);
+            float K = sin2a / G_EFF - 2f * DRAG_H * sinA * sinA / (G_EFF * G_EFF);
+            if (K <= 0f) return -1f;
+            float spd = Mathf.Sqrt(rangeMeters / K);
+            float[] stats = ComputeBallisticStats(spd, angleDeg);
+            achievedRange = stats[1];
+            return spd;
+        }
+
         static float[] ComputeBallisticStats(float spd, float angleDeg)
         {
             float rad = angleDeg * Mathf.Deg2Rad;
@@ -76,33 +95,61 @@ namespace Si_CrabCannon
             return structure.ObjectInfo.name.Contains("Nest");
         }
 
+        // Returns true if a team name looks alien-side (Alien, Wildlife, Worm, etc.)
+        static bool IsAlienSideTeamName(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return false;
+            return name.Contains("Alien") || name.Contains("Wildlife") || name.Contains("Worm");
+        }
+
+        // Legacy: returns a single alien-side team (highest-tier if multiple).
+        // Kept for backward compatibility with announcements that target one team.
         static Team FindAlienTeam()
         {
-            for (int i = 0; i < Player.Players.Count; i++)
+            Team best = null;
+            var teams = FindAllAlienTeams();
+            for (int i = 0; i < teams.Count; i++)
             {
-                var p = Player.Players[i];
-                if (p != null && p.Team != null && p.Team.TeamName != null &&
-                    p.Team.TeamName.Contains("Alien"))
-                    return p.Team;
+                if (best == null || teams[i].TechnologyTier > best.TechnologyTier)
+                    best = teams[i];
             }
-            return null;
+            return best;
+        }
+
+        // Returns all alien-side teams (Alien + Wildlife in 4way mode, just Alien in standard).
+        static List<Team> FindAllAlienTeams()
+        {
+            var result = new List<Team>();
+            // Scan Team.Teams directly — covers teams with no players too
+            for (int i = 0; i < Team.Teams.Count; i++)
+            {
+                var t = Team.Teams[i];
+                if (t == null) continue;
+                if (IsAlienSideTeamName(t.TeamName))
+                    result.Add(t);
+            }
+            return result;
         }
 
         void CheckCannonTierAnnouncement()
         {
             if (_cannonTierAnnounced || MinTier <= 0) return;
 
-            Team alienTeam = FindAlienTeam();
-            if (alienTeam == null) return;
+            var teams = FindAllAlienTeams();
+            if (teams.Count == 0) return;
 
-            if (alienTeam.TechnologyTier >= MinTier)
+            // Announce to every alien-side team that has reached MinTier
+            bool anyAnnounced = false;
+            foreach (var t in teams)
             {
-                _cannonTierAnnounced = true;
+                if (t.TechnologyTier < MinTier) continue;
                 float[] cs = ComputeBallisticStats(LaunchSpeed, LaunchAngle);
-                SendTeamChat(alienTeam,
+                SendTeamChat(t,
                     string.Format("[CANNON] Crab Cannon unlocked! Walk a crab to the Nest to launch. Use /ccaim <angle> <speed> to aim (peak={0:F0}m range={1:F0}m).",
                         cs[0], cs[1]));
+                anyAnnounced = true;
             }
+            if (anyAnnounced) _cannonTierAnnounced = true;
         }
 
         bool IsNearNest(Unit unit, List<Structure> structures)

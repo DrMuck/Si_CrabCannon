@@ -1,5 +1,5 @@
 /*
- Si_CrabCannon - v2.6.0
+ Si_CrabCannon - v2.7.0
 
  Alien cannon: player-controlled alien units near a friendly Nest get
  launched across the map like a cannonball. Real physics approach.
@@ -24,7 +24,7 @@ using SilicaAdminMod;
 using System.IO;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(Si_CrabCannon.CrabCannon), "Crab Cannon", "2.6.0", "schwe")]
+[assembly: MelonInfo(typeof(Si_CrabCannon.CrabCannon), "Crab Cannon", "2.7.0", "schwe")]
 [assembly: MelonGame("Bohemia Interactive", "Silica")]
 
 namespace Si_CrabCannon
@@ -40,7 +40,7 @@ namespace Si_CrabCannon
         {
             _configPath = Path.Combine("UserData", "CrabCannon_Config.json");
             LoadConfig();
-            MelonLogger.Msg("Crab Cannon v2.6.0 loaded! (real physics + super weapon)");
+            MelonLogger.Msg("Crab Cannon v2.7.0 loaded! (real physics + super weapon)");
             GameEvents.OnGameEnded += OnGameEnded;
         }
 
@@ -64,6 +64,7 @@ namespace Si_CrabCannon
             _superAnnounced = false;
             _superRecharging = false;
             _superRechargeTimer = 0f;
+            _superTeamsContributed.Clear();
             _playerAim.Clear();
             MelonLogger.Msg("CrabCannon: Round ended, cleared state.");
         }

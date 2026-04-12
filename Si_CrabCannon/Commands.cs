@@ -54,9 +54,75 @@ namespace Si_CrabCannon
                 return;
             }
 
+            // /ccaim range <meters> — compute speed from target range at the caller's current angle.
+            // Angle source priority: caller's personal aim override → super default (_superAngle).
+            if (angleStr.Equals("range", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!TryParseFloat(speedStr, out float reqRange) || reqRange <= 0f)
+                {
+                    HelperMethods.SendChatMessageToPlayer(caller, "Usage: /ccaim range <meters>");
+                    return;
+                }
+                if (reqRange > MAX_RANGE)
+                {
+                    HelperMethods.SendChatMessageToPlayer(caller,
+                        string.Format("Denied: range {0:F0}m exceeds {1}m limit.", reqRange, MAX_RANGE));
+                    return;
+                }
+
+                // Determine angle to use: player's personal override (if any) takes precedence.
+                int callerPid = caller.GetInstanceID();
+                float usedAngle;
+                string angleSource;
+                if (_playerAim.TryGetValue(callerPid, out float[] existingAim) && existingAim != null && existingAim.Length >= 1)
+                {
+                    usedAngle = existingAim[0];
+                    angleSource = "personal";
+                }
+                else
+                {
+                    usedAngle = _superAngle;
+                    angleSource = "super default";
+                }
+
+                float needSpd = ComputeSpeedForRange(usedAngle, reqRange, out float actualRange);
+                if (needSpd < 0f)
+                {
+                    HelperMethods.SendChatMessageToPlayer(caller,
+                        string.Format("Angle {0}° cannot achieve that range. Change angle first via /ccaim <angle> <speed>.", usedAngle));
+                    return;
+                }
+                if (needSpd > 800f)
+                {
+                    HelperMethods.SendChatMessageToPlayer(caller,
+                        string.Format("Denied: range {0:F0}m at angle {1}° needs speed {2:F0} (max 800). Lower range or raise angle.",
+                            reqRange, usedAngle, needSpd));
+                    return;
+                }
+
+                if (caller.IsCommander)
+                {
+                    // Commander updates super defaults. Keep current super angle (don't overwrite with personal).
+                    _superAngle = usedAngle;
+                    _superSpeed = needSpd;
+                    _playerAim.Remove(callerPid);
+                    SaveConfig();
+                    SendTeamChat(caller.Team,
+                        string.Format("[SUPER WEAPON] Commander set aim: angle={0} speed={1:F0} -> range={2:F0}m ({3})", _superAngle, _superSpeed, actualRange, angleSource));
+                }
+                else
+                {
+                    // Player personal override — keep the angle they had (or super default), set new speed.
+                    _playerAim[callerPid] = new float[] { usedAngle, needSpd };
+                    HelperMethods.SendChatMessageToPlayer(caller,
+                        string.Format("Your cannon aim set: angle={0} speed={1:F0} -> range={2:F0}m ({3})", usedAngle, needSpd, actualRange, angleSource));
+                }
+                return;
+            }
+
             if (!TryParseFloat(angleStr, out float newAngle) || newAngle <= 0 || newAngle >= 90)
             {
-                HelperMethods.SendChatMessageToPlayer(caller, "Usage: /ccaim <angle 1-89> <speed>");
+                HelperMethods.SendChatMessageToPlayer(caller, "Usage: /ccaim <angle 1-89> <speed>  OR  /ccaim range <meters>");
                 return;
             }
 
@@ -82,6 +148,8 @@ namespace Si_CrabCannon
             {
                 _superAngle = newAngle;
                 _superSpeed = newSpeed;
+                // Clear personal override so team settings apply
+                _playerAim.Remove(caller.GetInstanceID());
                 SaveConfig();
                 float[] s = ComputeBallisticStats(_superSpeed, _superAngle);
                 SendTeamChat(caller.Team,
@@ -133,6 +201,29 @@ namespace Si_CrabCannon
                     }
                     else Reply(caller, "Crab Cannon: speed = " + LaunchSpeed + " (usage: /cc speed <number>)");
                     break;
+                case "range":
+                case "superrange":
+                {
+                    bool superMode = (sub == "superrange");
+                    if (!TryParseFloat(valStr, out float reqRange) || reqRange <= 0f)
+                    {
+                        Reply(caller, string.Format("Usage: /cc {0} <meters>", sub));
+                        break;
+                    }
+                    if (reqRange > MAX_RANGE)
+                    { Reply(caller, string.Format("Denied: range {0:F0}m exceeds {1}m limit.", reqRange, MAX_RANGE)); break; }
+                    float ang = superMode ? _superAngle : LaunchAngle;
+                    float needSpd = ComputeSpeedForRange(ang, reqRange, out float actualRange);
+                    if (needSpd < 0f)
+                    { Reply(caller, string.Format("Angle {0}° cannot achieve any range. Change angle first.", ang)); break; }
+                    if (needSpd > 800f)
+                    { Reply(caller, string.Format("Denied: range {0:F0}m at angle {1}° needs speed {2:F0} (max 800). Raise angle or lower range.", reqRange, ang, needSpd)); break; }
+                    if (superMode) _superSpeed = needSpd; else LaunchSpeed = needSpd;
+                    SaveConfig();
+                    string label = superMode ? "Super" : "Default";
+                    Reply(caller, string.Format("Crab Cannon {0}: angle={1} speed={2:F0} -> range={3:F0}m", label, ang, needSpd, actualRange));
+                    break;
+                }
                 case "angle":
                     if (TryParseFloat(valStr, out float angle) && angle > 0 && angle < 90)
                     {
@@ -200,7 +291,7 @@ namespace Si_CrabCannon
                         CooldownSeconds, TriggerRadius, MinTier, unitFlags, superInfo));
                     break;
                 default:
-                    Reply(caller, "/cc [on|off|speed|angle|cooldown|radius|tier|status|crab|goliath|behemoth|scorpion|hunter|super|supercharges|supercd]");
+                    Reply(caller, "/cc [on|off|speed|angle|range|superrange|cooldown|radius|tier|status|crab|goliath|behemoth|scorpion|hunter|super|supercharges|supercd]");
                     break;
             }
         }

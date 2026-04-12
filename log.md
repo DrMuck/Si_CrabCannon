@@ -1,6 +1,28 @@
 # Si_CrabCannon — Changelog
 
-## v2.1.0 (2026-04-02) [CURRENT]
+## v2.7.0 (2026-04-12) [CURRENT] — Multi-alien-team + range-based aim
+
+### Multi-alien-team support (self-contained, not 4way-dependent)
+- `FindAlienTeam` kept as legacy (returns the highest-tier alien-side team); new `FindAllAlienTeams` returns every team whose name contains "Alien", "Wildlife", or "Worm". Scans `Team.Teams` directly so it finds teams with no players.
+- `UpdateSuperWeapon` rewritten to track qualification per team in `HashSet<int> _superTeamsContributed` keyed by `Team.Index`. Each alien-side team that reaches `SuperTier` adds `SuperMaxCharges` to the shared pool and gets its own announcement.
+- Recharge refills to `SuperMaxCharges × contributingTeamCount` (so a 2-team pool refills to 10, a 1-team pool to 5).
+- `CheckCannonTierAnnouncement` iterates all alien-side teams and announces cannon-unlock per team.
+- Works transparently in standard HvA (1 alien team, unchanged 5-charge behavior) and in 4-way mode (2 alien-side teams, additive pool).
+
+### Range-based aim
+- `/ccaim range <meters>` — players/commanders set aim by target range; speed is computed from the current super angle via inverse ballistics (`range = spd² · K(angle)` → `spd = sqrt(range/K)`). Commander sets super defaults; players get personal aim override.
+- `/cc range <m>` — admin, sets `LaunchSpeed` for default cannon at current `LaunchAngle`.
+- `/cc superrange <m>` — admin, sets `_superSpeed` for super cannon at current `_superAngle`.
+- All paths validate speed ≤ 800 and range ≤ `MAX_RANGE` (6000m), with helpful rejection messages suggesting angle change.
+- New `ComputeSpeedForRange()` helper in `Helpers.cs`, derived from the existing `ComputeBallisticStats()` formula to stay consistent (same `G_EFF`, `DRAG_H`).
+
+### Status/UI
+- `/cc` help text updated to list `range` and `superrange` subcommands.
+- `SuperLaunch` messaging now reports the **pool max** (`SuperMaxCharges × contributingTeams`) instead of the single-team max.
+
+---
+
+## v2.1.0 (2026-04-02)
 - Fix: disable `CreatureDecapod` script during flight — its FixedUpdate was zeroing `rb.linearVelocity`
 - Fix: disable `SphereCollider` during flight — prevents physics contacts from decelerating
 - Both restored on landing
