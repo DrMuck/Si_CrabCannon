@@ -26,14 +26,14 @@ Config is auto-created at `UserData/cfg/CrabCannon/CrabCannon_Config.json` on fi
 
 ## Admin commands (`/cc`)
 
-All `/cc` subcommands require admin (`CanAdminExecute(Power.Generic)`).
+All `/cc` subcommands require admin (`CanAdminExecute(Power.Generic)`). The toggles below (`crab`, `goliath`, `behemoth`, `scorpion`, `hunter`, `super`, `playeraim`, `commanderaim`) also take an optional `on` or `off`.
 
 ### Core
 
 | Command | Effect |
 |--|--|
 | `/cc` | Toggle ON / OFF |
-| `/cc on` / `/cc off` | Explicit on/off |
+| `/cc on` / `/cc off` | Explicit on/off (also `/cc enabled on\|off`) |
 | `/cc status` | One-line summary: mode, speed, angle, peak/range, cooldown, per-creature toggles, super state |
 | `/cc speed <m/s>` | Launch speed (0–800). Previews new peak + range. Rejected if range exceeds map limit |
 | `/cc angle <0–90>` | Launch angle in degrees |

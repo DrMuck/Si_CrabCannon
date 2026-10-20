@@ -165,6 +165,14 @@ namespace Si_CrabCannon
             }
         }
 
+        // Toggle sub-commands also accept an explicit "on"/"off" (used by the Si_ModUI switches); without it they still flip.
+        static bool Flip(bool current, string word)
+        {
+            if (string.Equals(word, "on", StringComparison.OrdinalIgnoreCase)) return true;
+            if (string.Equals(word, "off", StringComparison.OrdinalIgnoreCase)) return false;
+            return !current;
+        }
+
         // === /cc — admin only ===
         static void OnCcCommand(Player? caller, string args)
         {
@@ -251,19 +259,19 @@ namespace Si_CrabCannon
                     { MinTier = tier; SaveConfig(); Reply(caller, "Crab Cannon: min tier = " + MinTier); }
                     else Reply(caller, "Crab Cannon: min tier = " + MinTier);
                     break;
-                case "crab": CrabEnabled = !CrabEnabled; SaveConfig(); Reply(caller, "crab = " + (CrabEnabled ? "ON" : "OFF")); break;
-                case "goliath": GoliathEnabled = !GoliathEnabled; SaveConfig(); Reply(caller, "goliath = " + (GoliathEnabled ? "ON" : "OFF")); break;
-                case "behemoth": BehemothEnabled = !BehemothEnabled; SaveConfig(); Reply(caller, "behemoth = " + (BehemothEnabled ? "ON" : "OFF")); break;
-                case "scorpion": ScorpionEnabled = !ScorpionEnabled; SaveConfig(); Reply(caller, "scorpion = " + (ScorpionEnabled ? "ON" : "OFF")); break;
-                case "hunter": HunterEnabled = !HunterEnabled; SaveConfig(); Reply(caller, "hunter = " + (HunterEnabled ? "ON" : "OFF")); break;
-                case "super": SuperEnabled = !SuperEnabled; SaveConfig(); Reply(caller, "Super weapon = " + (SuperEnabled ? "ON" : "OFF")); break;
+                case "crab": CrabEnabled = Flip(CrabEnabled, valStr); SaveConfig(); Reply(caller, "crab = " + (CrabEnabled ? "ON" : "OFF")); break;
+                case "goliath": GoliathEnabled = Flip(GoliathEnabled, valStr); SaveConfig(); Reply(caller, "goliath = " + (GoliathEnabled ? "ON" : "OFF")); break;
+                case "behemoth": BehemothEnabled = Flip(BehemothEnabled, valStr); SaveConfig(); Reply(caller, "behemoth = " + (BehemothEnabled ? "ON" : "OFF")); break;
+                case "scorpion": ScorpionEnabled = Flip(ScorpionEnabled, valStr); SaveConfig(); Reply(caller, "scorpion = " + (ScorpionEnabled ? "ON" : "OFF")); break;
+                case "hunter": HunterEnabled = Flip(HunterEnabled, valStr); SaveConfig(); Reply(caller, "hunter = " + (HunterEnabled ? "ON" : "OFF")); break;
+                case "super": SuperEnabled = Flip(SuperEnabled, valStr); SaveConfig(); Reply(caller, "Super weapon = " + (SuperEnabled ? "ON" : "OFF")); break;
                 case "countdown":
                     if (TryParseFloat(valStr, out float cdown) && cdown >= 0)
                     { CannonCountdown = cdown; SaveConfig(); Reply(caller, "Cannon countdown = " + CannonCountdown + "s"); }
                     else Reply(caller, "Cannon countdown = " + CannonCountdown + "s (usage: /cc countdown <seconds>)");
                     break;
-                case "playeraim": PlayerAimAllowed = !PlayerAimAllowed; SaveConfig(); Reply(caller, "Player aim = " + (PlayerAimAllowed ? "ALLOWED" : "LOCKED")); break;
-                case "commanderaim": CommanderAimAllowed = !CommanderAimAllowed; SaveConfig(); Reply(caller, "Commander aim = " + (CommanderAimAllowed ? "ALLOWED" : "LOCKED")); break;
+                case "playeraim": PlayerAimAllowed = Flip(PlayerAimAllowed, valStr); SaveConfig(); Reply(caller, "Player aim = " + (PlayerAimAllowed ? "ALLOWED" : "LOCKED")); break;
+                case "commanderaim": CommanderAimAllowed = Flip(CommanderAimAllowed, valStr); SaveConfig(); Reply(caller, "Commander aim = " + (CommanderAimAllowed ? "ALLOWED" : "LOCKED")); break;
                 case "supercharges":
                     if (int.TryParse(valStr, out int ch) && ch > 0)
                     { SuperMaxCharges = ch; SaveConfig(); Reply(caller, "Super weapon charges = " + SuperMaxCharges); }
@@ -274,6 +282,7 @@ namespace Si_CrabCannon
                     { SuperRechargeTime = scd; SaveConfig(); Reply(caller, "Super weapon recharge = " + SuperRechargeTime + "s"); }
                     else Reply(caller, "Super weapon recharge = " + SuperRechargeTime + "s");
                     break;
+                case "enabled": _enabled = Flip(_enabled, valStr); SaveConfig(); Reply(caller, "Crab Cannon: " + (_enabled ? "ON" : "OFF")); break; // Si_ModUI switch text "/cc enabled on|off"
                 case "on": _enabled = true; SaveConfig(); Reply(caller, "Crab Cannon: ON"); break;
                 case "off": _enabled = false; SaveConfig(); Reply(caller, "Crab Cannon: OFF"); break;
                 case "status":
@@ -291,7 +300,7 @@ namespace Si_CrabCannon
                         CooldownSeconds, TriggerRadius, MinTier, unitFlags, superInfo));
                     break;
                 default:
-                    Reply(caller, "/cc [on|off|speed|angle|range|superrange|cooldown|radius|tier|status|crab|goliath|behemoth|scorpion|hunter|super|supercharges|supercd]");
+                    Reply(caller, "/cc [on|off|enabled|speed|angle|range|superrange|cooldown|radius|tier|status|crab|goliath|behemoth|scorpion|hunter|super|supercharges|supercd]");
                     break;
             }
         }

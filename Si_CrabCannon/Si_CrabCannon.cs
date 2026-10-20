@@ -9,8 +9,8 @@
  Commander or Goliath player sets aim via /ccaim <angle> <speed>.
 
  Admin commands (/cc ...):
-   on|off, speed, angle, cooldown, radius, tier, status
-   crab, goliath, behemoth, scorpion, hunter — toggle unit types
+   on|off (or enabled on|off), speed, angle, cooldown, radius, tier, status
+   crab, goliath, behemoth, scorpion, hunter — toggle unit types (optionally "on"/"off" as argument)
    super — toggle super weapon on/off
    supercharges N — set max charges (default 5)
    supercd N — set recharge time in seconds (default 360)
@@ -24,7 +24,7 @@ using SilicaAdminMod;
 using System.IO;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(Si_CrabCannon.CrabCannon), "Crab Cannon", "2.8.0", "schwe")]
+[assembly: MelonInfo(typeof(Si_CrabCannon.CrabCannon), "Crab Cannon", "2.8.1", "schwe")]
 [assembly: MelonGame("Bohemia Interactive", "Silica")]
 
 namespace Si_CrabCannon
@@ -40,7 +40,7 @@ namespace Si_CrabCannon
         {
             _configPath = ConfigPaths.Resolve("CrabCannon_Config.json");
             LoadConfig();
-            MelonLogger.Msg("Crab Cannon v2.8.0 loaded! (real physics + super weapon)");
+            MelonLogger.Msg("Crab Cannon v2.8.1 loaded! (real physics + super weapon)");
             GameEvents.OnGameEnded += OnGameEnded;
         }
 
