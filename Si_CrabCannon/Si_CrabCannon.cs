@@ -24,7 +24,7 @@ using SilicaAdminMod;
 using System.IO;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(Si_CrabCannon.CrabCannon), "Crab Cannon", "2.7.0", "schwe")]
+[assembly: MelonInfo(typeof(Si_CrabCannon.CrabCannon), "Crab Cannon", "2.8.0", "schwe")]
 [assembly: MelonGame("Bohemia Interactive", "Silica")]
 
 namespace Si_CrabCannon
@@ -38,9 +38,9 @@ namespace Si_CrabCannon
 
         public override void OnInitializeMelon()
         {
-            _configPath = Path.Combine("UserData", "CrabCannon_Config.json");
+            _configPath = ConfigPaths.Resolve("CrabCannon_Config.json");
             LoadConfig();
-            MelonLogger.Msg("Crab Cannon v2.7.0 loaded! (real physics + super weapon)");
+            MelonLogger.Msg("Crab Cannon v2.8.0 loaded! (real physics + super weapon)");
             GameEvents.OnGameEnded += OnGameEnded;
         }
 

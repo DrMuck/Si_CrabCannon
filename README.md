@@ -22,7 +22,7 @@ Acts as the alien equivalent of artillery or a nuke.
 3. Copy `Si_CrabCannon.dll` to your server's `Mods/` folder
 4. (Optional) Copy `cannon_boom.wav` (or your own) to `UserData/sounds/`
 
-Config is auto-created at `UserData/CrabCannon_cfg/Si_CrabCannon_Config.json` on first run.
+Config is auto-created at `UserData/cfg/CrabCannon/CrabCannon_Config.json` on first run.
 
 ## Admin commands (`/cc`)
 
@@ -86,7 +86,7 @@ If you don't have permission, `/ccaim` returns "Aim is locked".
 
 ## Configuration
 
-`UserData/CrabCannon_cfg/Si_CrabCannon_Config.json` — auto-created on first run.
+`UserData/cfg/CrabCannon/CrabCannon_Config.json` — auto-created on first run.
 
 Key fields:
 - `LaunchSpeed`, `LaunchAngle` — default cannon ballistics
