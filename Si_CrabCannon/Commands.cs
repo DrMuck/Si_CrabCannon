@@ -54,6 +54,24 @@ namespace Si_CrabCannon
                 return;
             }
 
+            // /ccaim angle <deg> | /ccaim speed <v> (Si_ModUI value rows): set one component, keep the other
+            // from the caller's personal aim or, without one, from the super default.
+            if (!string.IsNullOrEmpty(speedStr) &&
+                (angleStr.Equals("angle", StringComparison.OrdinalIgnoreCase) || angleStr.Equals("speed", StringComparison.OrdinalIgnoreCase)))
+            {
+                float keepAngle = _superAngle, keepSpeed = _superSpeed;
+                if (_playerAim.TryGetValue(caller.GetInstanceID(), out float[] own)) { keepAngle = own[0]; keepSpeed = own[1]; }
+                if (angleStr.Equals("angle", StringComparison.OrdinalIgnoreCase))
+                {
+                    angleStr = speedStr;
+                    speedStr = keepSpeed.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    angleStr = keepAngle.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                }
+            }
+
             // /ccaim range <meters> — compute speed from target range at the caller's current angle.
             // Angle source priority: caller's personal aim override → super default (_superAngle).
             if (angleStr.Equals("range", StringComparison.OrdinalIgnoreCase))

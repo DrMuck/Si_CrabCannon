@@ -24,7 +24,7 @@ using SilicaAdminMod;
 using System.IO;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(Si_CrabCannon.CrabCannon), "Crab Cannon", "2.8.2", "schwe")]
+[assembly: MelonInfo(typeof(Si_CrabCannon.CrabCannon), "Crab Cannon", "2.8.4", "schwe")]
 [assembly: MelonGame("Bohemia Interactive", "Silica")]
 
 namespace Si_CrabCannon

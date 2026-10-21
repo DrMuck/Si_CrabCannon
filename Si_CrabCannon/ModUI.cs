@@ -18,8 +18,9 @@ namespace Si_CrabCannon
                 string units = "crab" + (CrabEnabled ? "+" : "-") + " goliath" + (GoliathEnabled ? "+" : "-") + " behemoth" + (BehemothEnabled ? "+" : "-") +
                                " scorpion" + (ScorpionEnabled ? "+" : "-") + " hunter" + (HunterEnabled ? "+" : "-");
                 return ModUI.ModUIExport.New()
+                    .Enabled(_enabled)
                     .Info("Crab Cannon " + (_enabled ? "ON" : "OFF") + " | speed " + F(LaunchSpeed) + " angle " + F(LaunchAngle) + " -> peak " + R(st[0]) + " m, range " + R(st[1]) + " m | cooldown " + F(CooldownSeconds) + " s | radius " + F(TriggerRadius) + " m | tier >= " + MinTier + " | " + units)
-                    .Info("Super " + (SuperEnabled ? "ON" : "OFF") + " | " + _superCharges + "/" + SuperMaxCharges + " charges | recharge " + F(SuperRechargeTime) + " s | aim " + F(_superAngle) + " / " + F(_superSpeed) + " -> range " + R(ss[1]) + " m | player aim " + (PlayerAimAllowed ? "allowed" : "locked") + ", commander aim " + (CommanderAimAllowed ? "allowed" : "locked"))
+                    .Info("Super " + (SuperEnabled ? "ON" : "OFF") + " | max " + SuperMaxCharges + " charges | recharge " + F(SuperRechargeTime) + " s | aim " + F(_superAngle) + " / " + F(_superSpeed) + " -> range " + R(ss[1]) + " m | player aim " + (PlayerAimAllowed ? "allowed" : "locked") + ", commander aim " + (CommanderAimAllowed ? "allowed" : "locked"))
                     .Action("/ccaim", "Show my aim", "Your cannon aim and the resulting peak height and range.")
                     .Value("/ccaim angle", "Launch angle (1-89)", "Your launch angle; the speed stays. Commanders set the team default instead.", admin: false, current: F(_superAngle))
                     .Value("/ccaim speed", "Launch speed (1-800)", "Your launch speed; the angle stays. Commanders set the team default instead.", admin: false, current: F(_superSpeed))
