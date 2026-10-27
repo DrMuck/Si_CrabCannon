@@ -24,7 +24,7 @@ using SilicaAdminMod;
 using System.IO;
 using UnityEngine;
 
-[assembly: MelonInfo(typeof(Si_CrabCannon.CrabCannon), "Crab Cannon", "2.8.4", "schwe")]
+[assembly: MelonInfo(typeof(Si_CrabCannon.CrabCannon), "Crab Cannon", "2.8.5", "schwe")]
 [assembly: MelonGame("Bohemia Interactive", "Silica")]
 
 namespace Si_CrabCannon
@@ -40,7 +40,7 @@ namespace Si_CrabCannon
         {
             _configPath = ConfigPaths.Resolve("CrabCannon_Config.json");
             LoadConfig();
-            MelonLogger.Msg("Crab Cannon v2.8.2 loaded! (real physics + super weapon)");
+            MelonLogger.Msg("Crab Cannon v2.8.5 loaded! (real physics + super weapon)");
             GameEvents.OnGameEnded += OnGameEnded;
         }
 
@@ -81,14 +81,14 @@ namespace Si_CrabCannon
                     _proximityCheckTimer = PROXIMITY_CHECK_INTERVAL;
                     CheckProximityTriggers();
                 }
+                // Tier and super-weapon announcements belong to the switched-on mod only. Before 2.8.5 they ran
+                // regardless of _enabled, so a disabled cannon still told the alien team how to use it every round.
+                CheckCannonTierAnnouncement();
+                if (SuperEnabled)
+                    UpdateSuperWeapon();
             }
 
-            MonitorFlights();
-
-            CheckCannonTierAnnouncement();
-
-            if (SuperEnabled)
-                UpdateSuperWeapon();
+            MonitorFlights();   // flights already in the air land normally even if the mod is switched off mid-round
         }
     }
 }
